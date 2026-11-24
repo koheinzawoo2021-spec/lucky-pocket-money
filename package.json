@@ -1,0 +1,10 @@
+{
+  "name": "lucky-pocket-money-giveaway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Five-winner pocket money giveaway with server-side prize allocation",
+  "main": "server.js",
+  "scripts": {"start": "node server.js"},
+  "engines": {"node": ">=20"},
+  "dependencies": {"better-sqlite3": "^11.8.1", "express": "^4.21.2"}
+}
