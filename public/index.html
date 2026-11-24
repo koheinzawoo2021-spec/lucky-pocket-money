@@ -1,0 +1,94 @@
+
+<!doctype html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#b51d54">
+<title>Lucky Pocket Money</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at top,#fff1f6,#f8d7e4 55%,#f3bfd2);font-family:system-ui,sans-serif;color:#4c1830}
+.card{width:min(100%,430px);padding:28px 22px 30px;text-align:center;background:#fffafc;border:1px solid #fff;border-radius:28px;box-shadow:0 18px 60px #7c16442b}
+.tag{display:inline-block;padding:7px 13px;border-radius:99px;background:#ffe2ed;color:#a21d50;font-size:12px;font-weight:800;letter-spacing:.08em}
+.title{font-size:30px;font-weight:900;margin:14px 0 4px;color:#a51e50}
+.sub{margin:0 0 22px;color:#936579;font-size:14px}
+.envelope-wrap{height:230px;display:grid;place-items:center}
+.envelope{position:relative;width:190px;height:145px;border:0;background:linear-gradient(145deg,#e94c79,#b7164c);border-radius:14px;box-shadow:0 12px 22px #a51e5040;cursor:pointer}
+.envelope:before{content:"";position:absolute;inset:0;background:linear-gradient(35deg,transparent 49%,#ff9ab6 50%,transparent 51%),linear-gradient(-35deg,transparent 49%,#ff9ab6 50%,transparent 51%);border-radius:14px}
+.envelope:after{content:"";position:absolute;left:0;right:0;top:0;margin:auto;border-left:95px solid transparent;border-right:95px solid transparent;border-top:76px solid #ff91ae}
+.seal{position:absolute;z-index:2;left:50%;top:52%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#ffe7a8;color:#a51e50;font-size:25px}
+.hint{font-size:13px;color:#936579;margin-top:2px}
+.button{border:0;border-radius:99px;padding:15px 28px;background:#b51d54;color:white;font-size:16px;font-weight:800;cursor:pointer}
+.button:disabled{opacity:.55}
+.result{display:none;margin:14px auto 0;padding:18px;border-radius:18px;background:#fff0d2;color:#8a4b08}
+.amount{font-size:38px;font-weight:950;color:#b51d54}
+.status{min-height:24px;margin-top:15px;font-size:13px;color:#8d6575}
+.footer{font-size:11px;color:#b18a9b;margin-top:22px}
+</style>
+</head>
+<body>
+<main class="card">
+<div class="tag">LUCKY POCKET MONEY</div>
+<h1 class="title">ကံစမ်းမဲလေး ဖွင့်ကြည့်ပါ 🎁</h1>
+<p class="sub">သင့်အတွက် ကံကောင်းခြင်းလေး ရှိမလား?</p>
+<div class="envelope-wrap">
+<button class="envelope" id="open" aria-label="Open lucky envelope"><span class="seal">★</span></button>
+</div>
+<p class="hint" id="hint">အောက်ကခလုတ်ကိုနှိပ်ပြီး လက်ဆောင်ဖွင့်ပါ</p>
+<button class="button" id="openText">OPEN YOUR GIFT</button>
+<section class="result" id="result">
+<div>ဂုဏ်ယူပါတယ်! သင်ရရှိတဲ့ Pocket Money က</div>
+<div class="amount" id="amount"></div>
+<div>ကျပ် ဖြစ်ပါတယ် 🎉</div>
+</section>
+<div class="status" id="status" aria-live="polite"></div>
+<div class="footer">Limited giveaway · First 5 successful opens only</div>
+</main>
+<script>
+const openBtn=document.getElementById('open'),openText=document.getElementById('openText'),statusEl=document.getElementById('status'),result=document.getElementById('result'),amountEl=document.getElementById('amount'),hint=document.getElementById('hint');
+const key='lpm_visitor_id';let visitorId=localStorage.getItem(key);
+if(!visitorId){visitorId=crypto.randomUUID();localStorage.setItem(key,visitorId)}
+let busy=false;
+async function refresh(){
+try{
+const r=await fetch('/api/status',{cache:'no-store'});
+const s=await r.json();
+if(s.expired){
+statusEl.textContent='ဒီ Giveaway လေး ပြီးဆုံးသွားပါပြီ။ ကျေးဇူးတင်ပါတယ် ❤️';
+openBtn.disabled=openText.disabled=true;
+hint.textContent='GIVEAWAY EXPIRED';
+}
+}catch(e){}
+}
+async function openGift(){
+if(busy||openBtn.disabled)return;
+busy=true;openBtn.disabled=openText.disabled=true;
+statusEl.textContent='ခဏစောင့်ပေးပါ…';
+try{
+const r=await fetch('/api/open',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({visitorId})
+});
+const d=await r.json();
+if(d.status==='won'||d.status==='already_claimed'){
+amountEl.textContent=Number(d.amount).toLocaleString('en-US');
+result.style.display='block';
+hint.textContent='သင့်ရဲ့ကံစမ်းမှု ရလဒ်';
+statusEl.textContent='ကံကောင်းပါစေ ❤️';
+}else if(d.status==='expired'){
+statusEl.textContent='ဒီ Giveaway လေး ပြီးဆုံးသွားပါပြီ။';
+hint.textContent='GIVEAWAY EXPIRED';
+}else{throw new Error('Try again')}
+}catch(e){
+statusEl.textContent='ချိတ်ဆက်မှု မအောင်မြင်ပါ။ ပြန်ကြိုးစားပါ။';
+openBtn.disabled=openText.disabled=false;
+}finally{busy=false;refresh()}
+}
+openBtn.addEventListener('click',openGift);
+openText.addEventListener('click',openGift);
+refresh();
+</script>
+</body>
+</html>
